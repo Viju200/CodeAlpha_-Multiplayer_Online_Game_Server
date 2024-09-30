@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #game { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Multiplayer Game</h1>
+    <div id="register">
+        <input type="text" id="username" placeholder="Enter your username" />
+        <button onclick="registerPlayer()">Register</button>
+    </div>
+    <div id="game">
+        <h2>Welcome to the game!</h2>
+        <button onclick="performAction('move')">Move</button>
+        <button onclick="performAction('shoot')">Shoot</button>
+        <div id="messages"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function registerPlayer() {
+            const username = document.getElementById('username').value;
+            fetch('http://localhost:3000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.player) {
+                    document.getElementById('register').style.display = 'none';
+                    document.getElementById('game').style.display = 'block';
+                    socket.emit('joinGame', username);
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        function performAction(action) {
+            socket.emit('playerAction', action);
+        }
+
+        socket.on('message', (message) => {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<p>${message}</p>`;
+        });
+
+        socket.on('update', (data) => {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<p>${data.player} ${data.action}</p>`;
+        });
+    </script>
+</body>
+</html>
